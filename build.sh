@@ -51,7 +51,8 @@ build_zlib () {
 
 
 build_gdb () {
-  local CONFIGENV="LDFLAGS=-L$WHOSTLIBINST/usr/lib CPPFLAGS=-I${WHOSTLIBINST}/usr/include"
+  local DBGBUILD="-O0 -g3"
+  local CONFIGENV="CFLAGS=\"$DBGBUILD\" LDFLAGS=-L$WHOSTLIBINST/usr/lib CPPFLAGS=-I${WHOSTLIBINST}/usr/include"
   
   local version=$1
   
@@ -61,8 +62,17 @@ build_gdb () {
        --disable-nls \
        --disable-shared \
        --enable-static \
+       --disable-gas \
+       --disable-binutils \
+       --disable-ld \
+       --disable-gprof \
+       --disable-werror \
+       --disable-test \
+       --disable-guile \
+       --without-guile \
        --disable-sim \
-       --disable-tui"
+       --disable-tui \
+       --with-python=no"
   
   case "gdb-${version}" in
     gdb-8.*)
@@ -85,7 +95,7 @@ build_gdb () {
   rm -rf *
 
   echo "  Configuring..."
-  ../../src/gdb-$version/configure $cfg ${CONFIGENV} > ${LOGS}/gdb-$version.config 2>&1
+  eval ${CONFIGENV} ../../src/gdb-$version/configure $cfg > ${LOGS}/gdb-$version.config 2>&1
 
   echo "  Building..."
   make all > ${LOGS}/gdb-$version.build 2>&1
