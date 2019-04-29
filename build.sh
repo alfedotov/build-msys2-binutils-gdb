@@ -1,5 +1,124 @@
 #!/bin/bash
 
+untar_any () {
+  # Function to untar any file format
+
+  # Arguments are:
+  local tar=$1
+
+  file=`basename $tar`
+
+  if [ -f $tar ] ; then
+    echo "    unpacking $file"
+    case $file in
+      *.tar.bz2)  tar -xjf $tar    ;;
+      *.tar.gz)   tar -xzf $tar    ;;
+      *.tar.xz)   tar -xJf $tar    ;;
+      *.bz2)      bunzip2 $tar     ;;
+      *.gz)       gunzip $tar      ;;
+      *.tar)      tar -xf $tar     ;;
+      *.tbz2)     tar -xjf $tar    ;;
+      *.tgz)      tar -xzf $tar    ;;
+      *.zip)      unzip $tar       ;;
+      *.Z)        uncompress $tar  ;;
+      *.rar)      rar x $tar       ;;
+      *)          echo "'$tar' cannot be extracted via untar_any()"  ;;
+    esac
+  else
+      echo "'$tar' is not a valid file"
+  fi
+
+}
+
+insist_pkg () {
+  # Function to try to find pkg in any possible compression type
+
+  # Arguments are:
+  # Package name
+  local pkg=$1
+  # package extension
+  local forced_ext=$2
+
+  local extensions="tar.xz txz tar.gz tgz tar.bz2"
+
+  if [ "$forced_ext" != "" ]; then extensions=$forced_ext; fi
+
+  for e in $extensions; do
+    if [ -f $pkg.$e ]; then PKG="$pkg.$e"; return 0; fi
+  done
+  return 1
+}
+
+insist_wget () {
+  # Function to try to wget something in any possible compression type
+
+  # Arguments are:
+  # Package name
+  local pkg=$1
+  # url address
+  local url=$2
+  # package extension
+  local forced_ext=$3
+
+  local extensions="tar.xz tar.gz txz tgz tar.bz2"
+
+  if [ "$forced_ext" != "" ]; then extensions=$forced_ext; fi
+
+  PKG=""
+  insist_pkg "$pkg" "$forced_ext"
+
+  if [ "$PKG" = "" ]; then
+    echo "  Downloading $pkg"
+    for e in $extensions; do
+      wget -q $url/$pkg.$e
+      if [ $? = 0 ]; then
+        PKG="$pkg.$e";
+        return 0;
+      fi
+    done
+  else
+    echo "  Package $pkg exists."
+  fi
+
+}
+
+get_sources () {
+  local pkg=$1
+
+  case $pkg in
+    binutils-2*)
+      insist_wget "$pkg" "ftp://sourceware.org/pub/binutils/releases"
+      ;;
+    gdb-*)
+      insist_wget "$pkg" "ftp://ftp.gnu.org/gnu/gdb"
+      ;;
+    zlib-*)
+      insist_wget "$pkg" "http://www.zlib.net"
+      ;;
+    libiconv-*)
+      insist_wget "$pkg" "http://ftp.gnu.org/pub/gnu/libiconv"
+      ;;
+    expat-*)
+      insist_wget "$pkg" "http://downloads.sourceforge.net/expat/"
+      ;;
+    termcap-*)
+      insist_wget "$pkg" "https://ftp.gnu.org/gnu/termcap/"
+      ;;
+    xz-*)
+      insist_wget "$pkg" "https://tukaani.org/xz/"
+      ;;
+  esac
+
+
+  if [ "$PKG" != "" ]; then
+    pushd ${WORKDIR}/${SRCDIR} > /dev/null 2>&1
+      untar_any "${WORKDIR}/${PKGDIR}/$PKG"
+    popd > /dev/null 2>&1
+  fi
+
+}
+
+
 build_lib () {
   # Arguments are:
   # Library name
@@ -17,15 +136,15 @@ build_lib () {
 
   echo "  Configuring ${lib}"
   ../../src/${lib}-${version}/configure --prefix=${WHOSTLIBINST}/usr --disable-shared --disable-nls ${CONFIGENV} > ${LOGS}/${lib}.config 2>&1
-  
-  echo "  Building ${lib}" 
+
+  echo "  Building ${lib}"
   make all > ${LOGS}/${lib}.build 2>&1
-  
-  echo "  Installing ${lib}" 
+
+  echo "  Installing ${lib}"
   make install > ${LOGS}/${lib}.install 2>&1
 
   cd ../
-  echo 
+  echo
 }
 
 build_zlib () {
@@ -33,30 +152,30 @@ build_zlib () {
   # Library name
   local lib=$1
   local version=$2
- 
+
   echo "Building zlib separately:"
 
   cp -r ../src/${lib}-${version}/ ${lib}-${version}-build
   cd ${lib}-${version}-build
 
-  echo "  Building ${lib}" 
+  echo "  Building ${lib}"
   make -f win32/Makefile.gcc > ${LOGS}/${lib}.build 2>&1
-  
-  echo "  Installing ${lib}"  
+
+  echo "  Installing ${lib}"
   make -f win32/Makefile.gcc install INCLUDE_PATH=${WHOSTLIBINST}/usr/include BINARY_PATH=${WHOSTLIBINST}/usr/bin LIBRARY_PATH=${WHOSTLIBINST}/usr/lib > ${LOGS}/${lib}.install 2>&1
 
   cd ../
-  echo 
+  echo
 }
 
 
 build_gdb () {
   local DBGBUILD="-O0 -g3"
   local CONFIGENV="CFLAGS=\"$DBGBUILD\" LDFLAGS=-L$WHOSTLIBINST/usr/lib CPPFLAGS=-I${WHOSTLIBINST}/usr/include"
-  
+
   local version=$1
-  
-  cfg="--prefix ${PREFIX}/gdb-${GDB_VERSION} \
+
+  cfg="--prefix ${WORKDIR}/${INSTALLDIR}/gdb-${GDB_VERSION} \
        --with-libexpat-prefix=${WHOSTLIBINST}/usr \
        --target ${TRPTARGET} \
        --disable-nls \
@@ -73,7 +192,7 @@ build_gdb () {
        --disable-sim \
        --disable-tui \
        --with-python=no"
-  
+
   case "gdb-${version}" in
     gdb-8.*)
       # In the case of gdb 8.0, you have to also add the --disable-interprocess-agent to successfully build a static version
@@ -82,8 +201,8 @@ build_gdb () {
     gdb-7.12*)
       ;;
   esac
-  
-  
+
+
   echo "Building gdb-$version:"
 
   if [ ! -d gdb-$version-build ]; then
@@ -91,7 +210,7 @@ build_gdb () {
   fi
 
   cd gdb-$version-build
-  
+
   rm -rf *
 
   echo "  Configuring..."
@@ -99,12 +218,12 @@ build_gdb () {
 
   echo "  Building..."
   make all > ${LOGS}/gdb-$version.build 2>&1
-  
-  echo "  Installing..." 
-  make install > ${LOGS}/gdb-$version.install 2>&1
-  
 
-  echo 
+  echo "  Installing..."
+  make install > ${LOGS}/gdb-$version.install 2>&1
+
+
+  echo
   cd ../
 
 }
@@ -120,49 +239,60 @@ LIBICONV_VERSION="1.15"
 LIBLZMA_VERSION="5.2.4"
 
 TRPTARGET="arm-none-eabi"
+#TRPTARGET="powerpc-eabivle"
 TRPHOST="x86_64-w64-mingw32"
 
 WORKDIR=`pwd`
-BUILDDIR="build"
 
-PREFIX=${WORKDIR}/opt/
+PKGDIR="pkg"
+SRCDIR="src"
+BUILDDIR="build"
+INSTALLDIR="opt"
+
+
 WHOSTLIBINST=${WORKDIR}/${BUILDDIR}/mingw32_host_libs
 LOGS=${WORKDIR}/${BUILDDIR}/logs
+
+if [ ! -d ${BUILDDIR} ]; then
+  mkdir ${BUILDDIR}
+fi
 
 if [ ! -d ${LOGS} ]; then
   mkdir ${LOGS}
 fi
 
+
+## Prepare sources directory
+if [ ! -d ${SRCDIR} ]; then
+  mkdir ${SRCDIR}
+fi
+if [ ! -d ${PKGDIR} ]; then
+  mkdir ${PKGDIR}
+fi
+pushd ${PKGDIR} > /dev/null 2>&1
+  get_sources gdb-${GDB_VERSION}
+  get_sources expat-${EXPAT_VERSION}
+  get_sources termcap-${TERMCAP_VERSION}
+  get_sources libiconv-${LIBICONV_VERSION}
+  get_sources xz-${LIBLZMA_VERSION}
+  get_sources zlib-${ZLIB_VERSION}
+  echo
+popd > /dev/null 2>&1
+
+## Build stuff
 pushd ${BUILDDIR} > /dev/null 2>&1
+  build_lib expat ${EXPAT_VERSION}
+  build_lib termcap ${TERMCAP_VERSION}
+  build_lib libiconv ${LIBICONV_VERSION}
+  build_lib xz ${LIBLZMA_VERSION}
+  build_zlib zlib ${ZLIB_VERSION}
 
-  #build_lib expat ${EXPAT_VERSION}
-  #build_lib termcap ${TERMCAP_VERSION}
-  #build_lib libiconv ${LIBICONV_VERSION}
-  #build_lib xz ${LIBLZMA_VERSION}
-  #build_zlib zlib ${ZLIB_VERSION}
+  build_gdb ${GDB_VERSION}
 
-
-  INSTALL_DIR=${PREFIX}/gdb-${GDB_VERSION}
-  build_gdb $GDB_VERSION
-  
   #copy required MinGW library
-  if [ -d $INSTALL_DIR/bin ]; then
-    cp -f /c/msys64/mingw64/bin/libwinpthread-1.dll $INSTALL_DIR/bin
+  if [ -d ${WORKDIR}/${INSTALLDIR}/bin ]; then
+    cp -f /c/msys64/mingw64/bin/libwinpthread-1.dll ${WORKDIR}/${INSTALLDIR}/bin
   fi
-
-  
-  
-  #GDB_VERSION="8.2.1"
-  #
-  #INSTALL_DIR=${PREFIX}/gdb-${GDB_VERSION}
-  #build_gdb $GDB_VERSION
-  #
-  ##copy required MinGW library
-  #if [ -d $INSTALL_DIR/bin ]; then
-  #  cp -f /c/msys64/mingw64/bin/libwinpthread-1.dll $INSTALL_DIR/bin
-  #fi
-
-
 popd > /dev/null 2>&1
 
 echo "Done"
