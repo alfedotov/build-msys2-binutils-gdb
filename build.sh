@@ -22,10 +22,12 @@ untar_any () {
       *.zip)      unzip $tar       ;;
       *.Z)        uncompress $tar  ;;
       *.rar)      rar x $tar       ;;
-      *)          echo "'$tar' cannot be extracted via untar_any()"  ;;
+      *)
+        echo "Error: '$file' can't be extracted via untar_any()"
+        ;;
     esac
   else
-      echo "'$tar' is not a valid file"
+      echo "Error: file '$tar' doesn't exist."
   fi
 
 }
@@ -128,41 +130,33 @@ build_lib () {
 
   echo "Building ${lib} separately:"
 
-  if [ ! -d ${lib}-${version}-build ]; then
-    mkdir ${lib}-${version}-build
+  if [ "${lib}" == "zlib" ]; then
+    #zlib has different build process (TBD: check this later)
+    cp -r ../src/${lib}-${version}/ ${lib}-${version}-build
+    cd ${lib}-${version}-build
+
+    echo "  Building ${lib}"
+    make -f win32/Makefile.gcc > ${LOGS}/${lib}.build 2>&1
+
+    echo "  Installing ${lib}"
+    make -f win32/Makefile.gcc install INCLUDE_PATH=${WHOSTLIBINST}/usr/include BINARY_PATH=${WHOSTLIBINST}/usr/bin LIBRARY_PATH=${WHOSTLIBINST}/usr/lib > ${LOGS}/${lib}.install 2>&1
+  else
+    #all other libs which follow standard "configure/build/install" sequence
+    if [ ! -d ${lib}-${version}-build ]; then
+      mkdir ${lib}-${version}-build
+    fi
+
+    cd ${lib}-${version}-build
+
+    echo "  Configuring ${lib}"
+    ../../src/${lib}-${version}/configure --prefix=${WHOSTLIBINST}/usr --disable-shared --disable-nls ${CONFIGENV} > ${LOGS}/${lib}.config 2>&1
+
+    echo "  Building ${lib}"
+    make all > ${LOGS}/${lib}.build 2>&1
+
+    echo "  Installing ${lib}"
+    make install > ${LOGS}/${lib}.install 2>&1
   fi
-
-  cd ${lib}-${version}-build
-
-  echo "  Configuring ${lib}"
-  ../../src/${lib}-${version}/configure --prefix=${WHOSTLIBINST}/usr --disable-shared --disable-nls ${CONFIGENV} > ${LOGS}/${lib}.config 2>&1
-
-  echo "  Building ${lib}"
-  make all > ${LOGS}/${lib}.build 2>&1
-
-  echo "  Installing ${lib}"
-  make install > ${LOGS}/${lib}.install 2>&1
-
-  cd ../
-  echo
-}
-
-build_zlib () {
-  # Arguments are:
-  # Library name
-  local lib=$1
-  local version=$2
-
-  echo "Building zlib separately:"
-
-  cp -r ../src/${lib}-${version}/ ${lib}-${version}-build
-  cd ${lib}-${version}-build
-
-  echo "  Building ${lib}"
-  make -f win32/Makefile.gcc > ${LOGS}/${lib}.build 2>&1
-
-  echo "  Installing ${lib}"
-  make -f win32/Makefile.gcc install INCLUDE_PATH=${WHOSTLIBINST}/usr/include BINARY_PATH=${WHOSTLIBINST}/usr/bin LIBRARY_PATH=${WHOSTLIBINST}/usr/lib > ${LOGS}/${lib}.install 2>&1
 
   cd ../
   echo
@@ -285,14 +279,14 @@ pushd ${BUILDDIR} > /dev/null 2>&1
   build_lib termcap ${TERMCAP_VERSION}
   build_lib libiconv ${LIBICONV_VERSION}
   build_lib xz ${LIBLZMA_VERSION}
-  build_zlib zlib ${ZLIB_VERSION}
+  build_lib zlib ${ZLIB_VERSION}
 
   build_gdb ${GDB_VERSION}
-
-  #copy required MinGW library
-  if [ -d ${WORKDIR}/${INSTALLDIR}/bin ]; then
-    cp -f /c/msys64/mingw64/bin/libwinpthread-1.dll ${WORKDIR}/${INSTALLDIR}/bin
-  fi
 popd > /dev/null 2>&1
+
+#copy required MinGW library
+if [ -d ${WORKDIR}/${INSTALLDIR}/gdb-${GDB_VERSION}/bin ]; then
+  cp -f /c/msys64/mingw64/bin/libwinpthread-1.dll ${WORKDIR}/${INSTALLDIR}/gdb-${GDB_VERSION}/bin
+fi
 
 echo "Done"
