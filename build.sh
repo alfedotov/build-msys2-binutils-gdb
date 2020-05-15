@@ -222,9 +222,60 @@ build_gdb () {
 
 }
 
+
+build_binutils () {
+  local DBGBUILD="-O0 -g3"
+  local CONFIGENV="CFLAGS=\"$DBGBUILD\" LDFLAGS=-L$WHOSTLIBINST/usr/lib CPPFLAGS=-I${WHOSTLIBINST}/usr/include"
+
+  local version=$1
+
+  cfg="--prefix ${WORKDIR}/${INSTALLDIR}/binutils-${BINUTILS_VERSION} \
+       --with-libexpat-prefix=${WHOSTLIBINST}/usr \
+       --target ${TRPTARGET} \
+       --disable-nls \
+       --disable-shared \
+       --enable-static \
+       --disable-gdb \
+       --disable-gprof \
+       --disable-werror \
+       --disable-test \
+       --disable-guile \
+       --without-guile \
+       --disable-sim \
+       --disable-tui \
+       --with-python=no"
+
+
+  echo "Building bintuils-$version:"
+
+  if [ ! -d binutils-$version-build ]; then
+    mkdir binutils-$version-build
+  fi
+
+  cd binutils-$version-build
+
+  rm -rf *
+
+  echo "  Configuring..."
+  eval ${CONFIGENV} ../../src/binutils-$version/configure $cfg > ${LOGS}/binutils-$version.config 2>&1
+
+  echo "  Building..."
+  make all > ${LOGS}/binutils-$version.build 2>&1
+
+  echo "  Installing..."
+  make install > ${LOGS}/binutils-$version.install 2>&1
+
+
+  echo
+  cd ../
+
+}
+
+
 ################################################################################
 # Program entry point
 ################################################################################
+BINUTILS_VERSION="2.34"
 GDB_VERSION="7.12.1"
 EXPAT_VERSION="2.2.6"
 ZLIB_VERSION="1.2.11"
@@ -264,6 +315,7 @@ if [ ! -d ${PKGDIR} ]; then
   mkdir ${PKGDIR}
 fi
 pushd ${PKGDIR} > /dev/null 2>&1
+  get_sources binutils-${BINUTILS_VERSION}
   get_sources gdb-${GDB_VERSION}
   get_sources expat-${EXPAT_VERSION}
   get_sources termcap-${TERMCAP_VERSION}
@@ -281,12 +333,17 @@ pushd ${BUILDDIR} > /dev/null 2>&1
   build_lib xz ${LIBLZMA_VERSION}
   build_lib zlib ${ZLIB_VERSION}
 
+  build_binutils ${BINUTILS_VERSION}
   build_gdb ${GDB_VERSION}
 popd > /dev/null 2>&1
 
 #copy required MinGW library
 if [ -d ${WORKDIR}/${INSTALLDIR}/gdb-${GDB_VERSION}/bin ]; then
   cp -f /c/msys64/mingw64/bin/libwinpthread-1.dll ${WORKDIR}/${INSTALLDIR}/gdb-${GDB_VERSION}/bin
+fi
+
+if [ -d ${WORKDIR}/${INSTALLDIR}/binutils-${BINUTILS_VERSION}/bin ]; then
+  cp -f /c/msys64/mingw64/bin/libwinpthread-1.dll ${WORKDIR}/${INSTALLDIR}/binutils-${BINUTILS_VERSION}/bin
 fi
 
 echo "Done"
