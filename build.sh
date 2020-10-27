@@ -275,13 +275,13 @@ build_binutils () {
 ################################################################################
 # Program entry point
 ################################################################################
-BINUTILS_VERSION="2.34"
-GDB_VERSION="7.12.1"
-EXPAT_VERSION="2.2.6"
+BINUTILS_VERSION="2.35.1"
+GDB_VERSION="10.1"
+EXPAT_VERSION="2.2.10"
 ZLIB_VERSION="1.2.11"
 TERMCAP_VERSION="1.3.1"
-LIBICONV_VERSION="1.15"
-LIBLZMA_VERSION="5.2.4"
+LIBICONV_VERSION="1.16"
+LIBLZMA_VERSION="5.2.5"
 
 TRPTARGET="arm-none-eabi"
 #TRPTARGET="powerpc-eabivle"
