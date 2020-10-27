@@ -306,6 +306,8 @@ if [ ! -d ${LOGS} ]; then
   mkdir ${LOGS}
 fi
 
+echo "Building for target: ${TRPTARGET}"
+echo
 
 ## Prepare sources directory
 if [ ! -d ${SRCDIR} ]; then
