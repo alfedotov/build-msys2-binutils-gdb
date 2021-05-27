@@ -101,7 +101,9 @@ get_sources () {
       insist_wget "$pkg" "http://ftp.gnu.org/pub/gnu/libiconv"
       ;;
     expat-*)
-      insist_wget "$pkg" "http://downloads.sourceforge.net/expat/"
+      ver=${pkg#*-}
+      rel=R_${ver//[.]/_}
+      insist_wget "$pkg" "https://github.com/libexpat/libexpat/releases/download/${rel}/"
       ;;
     termcap-*)
       insist_wget "$pkg" "https://ftp.gnu.org/gnu/termcap/"
