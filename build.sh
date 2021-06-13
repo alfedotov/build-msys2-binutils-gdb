@@ -291,9 +291,9 @@ build_binutils () {
 ################################################################################
 # Program entry point
 ################################################################################
-BINUTILS_VERSION="2.35.1"
-GDB_VERSION="10.1"
-EXPAT_VERSION="2.2.10"
+BINUTILS_VERSION="2.36.1"
+GDB_VERSION="10.2"
+EXPAT_VERSION="2.4.1"
 ZLIB_VERSION="1.2.11"
 TERMCAP_VERSION="1.3.1"
 LIBICONV_VERSION="1.16"
