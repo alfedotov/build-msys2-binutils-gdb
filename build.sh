@@ -62,7 +62,7 @@ insist_wget () {
   # package extension
   local forced_ext=$3
 
-  local extensions="tar.xz tar.gz txz tgz tar.bz2"
+  local extensions="tar.gz tar.xz txz tgz tar.bz2"
 
   if [ "$forced_ext" != "" ]; then extensions=$forced_ext; fi
 
