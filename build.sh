@@ -308,6 +308,11 @@ if [ ! -d ${LOGS} ]; then
   mkdir ${LOGS}
 fi
 
+
+GCCVERSION=`gcc --version | grep ^gcc | sed 's/^.* //g'`
+echo "Host GCC version: ${GCCVERSION}"
+echo
+
 echo "Building for target: ${TRPTARGET}"
 echo
 
