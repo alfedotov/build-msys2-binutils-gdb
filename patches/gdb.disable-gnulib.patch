@@ -1,0 +1,15 @@
+diff -ruN gdb-10.2/gnulib/configure gdb-10.2-fix/gnulib/configure
+--- gdb-10.2/gnulib/configure	2021-04-25 07:06:26.000000000 +0300
++++ gdb-10.2-fix/gnulib/configure	2021-06-11 23:44:39.816198300 +0300
+@@ -20658,9 +20658,9 @@
+ int
+ main ()
+ {
+-#if !(_WIN32_WINNT >= _WIN32_WINNT_WIN7)
++//#if !(_WIN32_WINNT >= _WIN32_WINNT_WIN7)
+                   cannot assume it
+-                #endif
++//                #endif
+ 
+   ;
+   return 0;

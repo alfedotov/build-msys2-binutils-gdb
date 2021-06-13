@@ -128,6 +128,14 @@ patch_sources () {
 
   pushd "src/$pkg" > /dev/null 2>&1
     case $pkg in
+      gdb-10.*)
+        echo "  Patching $pkg:"
+
+        echo "      gdb.disable-gnulib.patch"
+        patch  $SILENT -p1 -i ../../patches/gdb.disable-gnulib.patch
+
+        echo
+        ;;
       *)
         ;;
     esac
@@ -180,10 +188,21 @@ build_lib () {
 
 
 build_gdb () {
-  local DBGBUILD="-O0 -g3"
-  local CONFIGENV="CFLAGS=\"$DBGBUILD\" LDFLAGS=-L$WHOSTLIBINST/usr/lib CPPFLAGS=-I${WHOSTLIBINST}/usr/include"
-
   local version=$1
+  local DBGBUILD="-O0 -g3"
+  local GDB_CFLAGS=""
+
+  case "gcc-${GCCVERSION}" in
+    gcc-10.*)
+      #GCC 10 default changed from "-fcommon" to "-fno-common"
+      GDB_CFLAGS="-fcommon"
+      ;;
+    *)
+      ;;
+  esac
+
+  local CONFIGENV="CFLAGS=\"$GDB_CFLAGS $DBGBUILD\" LDFLAGS=-L$WHOSTLIBINST/usr/lib CPPFLAGS=-I${WHOSTLIBINST}/usr/include"
+
 
   cfg="--prefix ${WORKDIR}/${INSTALLDIR}/gdb-${GDB_VERSION} \
        --with-libexpat-prefix=${WHOSTLIBINST}/usr \
@@ -204,6 +223,8 @@ build_gdb () {
        --with-python=no"
 
   case "gdb-${version}" in
+    gdb-10.*)
+      ;;
     gdb-8.*)
       # In the case of gdb 8.0, you have to also add the --disable-interprocess-agent to successfully build a static version
       cfg+=" --disable-interprocess-agent"
