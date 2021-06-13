@@ -122,6 +122,20 @@ get_sources () {
 
 }
 
+patch_sources () {
+  local pkg=$1
+  local SILENT="-s"
+
+  pushd "src/$pkg" > /dev/null 2>&1
+    case $pkg in
+      *)
+        ;;
+    esac
+
+  popd > /dev/null 2>&1
+
+}
+
 
 build_lib () {
   # Arguments are:
@@ -323,6 +337,7 @@ fi
 if [ ! -d ${PKGDIR} ]; then
   mkdir ${PKGDIR}
 fi
+
 pushd ${PKGDIR} > /dev/null 2>&1
   get_sources binutils-${BINUTILS_VERSION}
   get_sources gdb-${GDB_VERSION}
@@ -333,6 +348,8 @@ pushd ${PKGDIR} > /dev/null 2>&1
   get_sources zlib-${ZLIB_VERSION}
   echo
 popd > /dev/null 2>&1
+
+patch_sources gdb-${GDB_VERSION}
 
 ## Build stuff
 pushd ${BUILDDIR} > /dev/null 2>&1
