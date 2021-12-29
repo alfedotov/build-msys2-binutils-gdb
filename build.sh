@@ -111,6 +111,9 @@ get_sources () {
     xz-*)
       insist_wget "$pkg" "https://tukaani.org/xz/"
       ;;
+    gmp-*)
+       insist_wget "$pkg" "https://gmplib.org/download/gmp"
+      ;;
   esac
 
 
@@ -223,6 +226,9 @@ build_gdb () {
        --with-python=no"
 
   case "gdb-${version}" in
+    gdb-11.*)
+      cfg+=" --with-libgmp-prefix==${WHOSTLIBINST}/usr"
+      ;;
     gdb-10.*)
       ;;
     gdb-8.*)
@@ -313,12 +319,13 @@ build_binutils () {
 # Program entry point
 ################################################################################
 BINUTILS_VERSION="2.36.1"
-GDB_VERSION="10.2"
+GDB_VERSION="11.1"
 EXPAT_VERSION="2.4.1"
 ZLIB_VERSION="1.2.11"
 TERMCAP_VERSION="1.3.1"
 LIBICONV_VERSION="1.16"
 LIBLZMA_VERSION="5.2.5"
+LIBGMP_VERSION="6.2.1"
 
 TRPTARGET="arm-none-eabi"
 #TRPTARGET="powerpc-eabivle"
@@ -367,6 +374,8 @@ pushd ${PKGDIR} > /dev/null 2>&1
   get_sources libiconv-${LIBICONV_VERSION}
   get_sources xz-${LIBLZMA_VERSION}
   get_sources zlib-${ZLIB_VERSION}
+  get_sources gmp-${LIBGMP_VERSION}
+
   echo
 popd > /dev/null 2>&1
 
@@ -379,6 +388,7 @@ pushd ${BUILDDIR} > /dev/null 2>&1
   build_lib libiconv ${LIBICONV_VERSION}
   build_lib xz ${LIBLZMA_VERSION}
   build_lib zlib ${ZLIB_VERSION}
+  build_lib gmp ${LIBGMP_VERSION}
 
   build_binutils ${BINUTILS_VERSION}
   build_gdb ${GDB_VERSION}
