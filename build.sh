@@ -131,6 +131,14 @@ patch_sources () {
 
   pushd "src/$pkg" > /dev/null 2>&1
     case $pkg in
+      gdb-11.1)
+        echo "  Patching $pkg:"
+
+        echo "      gdb11.pr28405.patch"
+        patch  $SILENT -p1 -i ../../patches/gdb11.pr28405.patch
+
+        echo
+        ;;
       gdb-10.*)
         echo "  Patching $pkg:"
 
