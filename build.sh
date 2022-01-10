@@ -203,14 +203,9 @@ build_gdb () {
   local DBGBUILD="-O0 -g3"
   local GDB_CFLAGS=""
 
-  case "gcc-${GCCVERSION}" in
-    gcc-10.*)
-      #GCC 10 default changed from "-fcommon" to "-fno-common"
-      GDB_CFLAGS="-fcommon"
-      ;;
-    *)
-      ;;
-  esac
+  #GCC 10 default changed from "-fcommon" to "-fno-common".
+  #Resolves build issue with termcap: multiple definition of `PC'
+  GDB_CFLAGS+="-fcommon"
 
   local CONFIGENV="CFLAGS=\"$GDB_CFLAGS $DBGBUILD\" LDFLAGS=-L$WHOSTLIBINST/usr/lib CPPFLAGS=-I${WHOSTLIBINST}/usr/include"
 
