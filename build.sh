@@ -202,12 +202,23 @@ build_gdb () {
   local version=$1
   local DBGBUILD="-O0 -g3"
   local GDB_CFLAGS=""
+  local GDB_CXXFLAGS=""
 
   #GCC 10 default changed from "-fcommon" to "-fno-common".
   #Resolves build issue with termcap: multiple definition of `PC'
   GDB_CFLAGS+="-fcommon"
 
-  local CONFIGENV="CFLAGS=\"$GDB_CFLAGS $DBGBUILD\" LDFLAGS=-L$WHOSTLIBINST/usr/lib CPPFLAGS=-I${WHOSTLIBINST}/usr/include"
+  case "gdb-${version}" in
+    gdb-7.12*)
+      case "gcc-${GCCVERSION}" in
+        gcc-11.*)
+          GDB_CXXFLAGS+="-std=c++14"
+          ;;
+      esac
+      ;;
+  esac
+
+  local CONFIGENV="CFLAGS=\"$GDB_CFLAGS $DBGBUILD\" LDFLAGS=-L$WHOSTLIBINST/usr/lib CXXFLAGS=\"$GDB_CXXFLAGS\" CPPFLAGS=-I${WHOSTLIBINST}/usr/include"
 
 
   cfg="--prefix ${WORKDIR}/${INSTALLDIR}/gdb-${GDB_VERSION} \
@@ -230,7 +241,7 @@ build_gdb () {
 
   case "gdb-${version}" in
     gdb-11.*)
-      cfg+=" --with-libgmp-prefix==${WHOSTLIBINST}/usr"
+      cfg+=" --with-libgmp-prefix=${WHOSTLIBINST}/usr"
       ;;
     gdb-10.*)
       ;;
